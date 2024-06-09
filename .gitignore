@@ -1,6 +1,8 @@
 __pycache__/
 venv/
 .venv/
+env/
+.env/
 dist/
 .coverage
 .ipynb_checkpoints/
@@ -32,6 +34,7 @@ dist/
 *.csv
 *.bak
 /mos_results/
+model_assets/
 
 safetensors.ipynb
 *.wav
