@@ -27,7 +27,7 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from style_bert_vits2.logging import logger
 from style_bert_vits2.models import commons, utils
 from style_bert_vits2.models.hyper_parameters import HyperParameters
-from style_bert_vits2.models.models_jp_extra import (
+from style_bert_vits2.models.models_jp_extra_nog import ( #ここを変更
     DurationDiscriminator,
     MultiPeriodDiscriminator,
     SynthesizerTrn,
@@ -434,6 +434,7 @@ def run():
     #DPPは複数GPUでの学習を行うためのものなのでシングルの場合は気にしなくて良い
     net_g = DDP(
         net_g,
+        find_unused_parameters=True,  # これをTrueにすると、使用されていないパラメータがある場合に警告を出さなくなる
         device_ids=[local_rank],
         # bucket_cap_mb=512
     )

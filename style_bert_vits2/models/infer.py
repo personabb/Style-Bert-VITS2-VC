@@ -299,6 +299,109 @@ def infer(
             torch.cuda.empty_cache()
         return audio
 
+from mel_processing import mel_spectrogram_torch, spectrogram_torch
+import numpy as np
+from config import get_config
+def get_audio(audio_numpy: NDArray[Any],hps: HyperParameters,sample_rate=44100):
+
+    audio = torch.FloatTensor(audio_numpy.astype(np.float32))
+    if sample_rate != hps.data.sampling_rate:
+            raise ValueError(
+                f" {sample_rate} SR doesn't match target 44100 SR"
+            )
+
+    max_wav_value = hps.data.max_wav_value
+    use_mel_spec_posterior = hps.model.use_mel_posterior_encoder
+    filter_length = hps.data.filter_length
+    n_mel_channels = hps.data.n_mel_channels
+    
+    hop_length = hps.data.hop_length
+    win_length = hps.data.win_length
+    mel_fmin = hps.data.mel_fmin
+    mel_fmax = hps.data.mel_fmax
+
+    audio_norm = audio / max_wav_value
+    audio_norm = audio_norm.unsqueeze(0)
+
+    if use_mel_spec_posterior:
+        spec = mel_spectrogram_torch(
+            audio_norm,
+            filter_length,
+            n_mel_channels,
+            sample_rate,
+            hop_length,
+            win_length,
+            mel_fmin,
+            mel_fmax,
+            center=False,
+        )
+    else:
+        spec = spectrogram_torch(
+            audio_norm,
+            filter_length,
+            sample_rate,
+            hop_length,
+            win_length,
+            center=False,
+        )
+    spec = torch.squeeze(spec, 0)
+
+    return spec
+
+def infer_audio(
+    audio: NDArray[Any],
+    t_sid: int,  # In the original Bert-VITS2, its speaker_name: str, but here it's id
+    hps: HyperParameters,
+    net_g: Union[SynthesizerTrn, SynthesizerTrnJPExtra],
+    device: str,
+    r_sid: int = None,  # In the original Bert-VITS2, its speaker_name: str, but here it's id
+    sample_rate = 44100,
+):
+    is_jp_extra = hps.version.endswith("JP-Extra")
+    spec  = get_audio(audio, hps, sample_rate)
+
+
+    with torch.no_grad():
+        input_spec = spec.to(device).unsqueeze(0)
+        #print("spec",spec.size())
+        #print("input_spec",input_spec.size())
+        input_spec_lengths = torch.LongTensor([spec.size(1)]).to(device)
+        #print("input_spec_lengths",input_spec_lengths)
+        t_sid_tensor = torch.LongTensor([t_sid]).to(device)
+        if r_sid is not None:
+            r_sid_tensor = torch.LongTensor([r_sid]).to(device)
+        else:
+            r_sid_tensor = None
+        if is_jp_extra:
+            output = cast(SynthesizerTrnJPExtra, net_g).infer_audio(
+                input_spec,
+                input_spec_lengths,
+                t_sid_tensor,
+                r_sid_tensor,
+            )
+        else:
+            raise ValueError(
+                f" Sorry, infer_audio is only implemented for JP-Extra model"
+            )
+        audio = output[0][0, 0].data.cpu().float().numpy()
+        #print("audio",output)
+        if r_sid is None:
+            del (
+                spec,
+                input_spec_lengths,
+                t_sid_tensor,
+            )  # , emo
+        else:
+            del (
+                spec,
+                input_spec_lengths,
+                t_sid_tensor,
+                r_sid_tensor,
+            )
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        return audio
+
 
 class InvalidPhoneError(ValueError):
     pass

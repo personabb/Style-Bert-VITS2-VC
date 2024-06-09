@@ -22,7 +22,7 @@ from style_bert_vits2.logging import logger
 from style_bert_vits2.models.hyper_parameters import HyperParameters
 from style_bert_vits2.models.infer import get_net_g, infer, infer_audio
 from style_bert_vits2.models.models import SynthesizerTrn
-from style_bert_vits2.models.models_jp_extra import (
+from style_bert_vits2.models.models_jp_extra_nog import (
     SynthesizerTrn as SynthesizerTrnJPExtra,
 )
 from style_bert_vits2.voice import adjust_voice
@@ -343,7 +343,7 @@ class TTSModel:
         tar_speaker_id: int = 0,
         pitch_scale: float = 1.0,
         intonation_scale: float = 1.0,
-        sample_rate: int = 44100,
+        sample_rate:int  = 44100,
     ) -> tuple[int, NDArray[Any]]:
         """
         テキストから音声を合成する。

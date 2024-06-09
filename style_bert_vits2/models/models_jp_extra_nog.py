@@ -1038,7 +1038,7 @@ class SynthesizerTrn(nn.Module):
 
         #text encoder
         x, m_p, logs_p, x_mask = self.enc_p(
-            x, x_lengths, tone, language, bert, style_vec, g=g
+            x, x_lengths, tone, language, bert, style_vec, g=None  #ここを変更（多分ここだけ）
         )
         #posterior encoder
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
